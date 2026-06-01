@@ -8,6 +8,32 @@ import { uploadPhotos } from "@/lib/actions";
 type Person = { id: string; name: string; profile_photo_path: string };
 type PreparedPhoto = { id: string; base64: string; embeddings: number[][]; boxes: string[]; faceCount: number };
 
+const MAX_UPLOAD_BATCH_CHARS = 35 * 1024 * 1024;
+
+function estimatePhotoPayloadSize(photo: PreparedPhoto) {
+  return photo.base64.length + JSON.stringify(photo.embeddings).length + JSON.stringify(photo.boxes).length + 256;
+}
+
+function chunkPhotosForUpload(photos: PreparedPhoto[]) {
+  const batches: PreparedPhoto[][] = [];
+  let batch: PreparedPhoto[] = [];
+  let batchSize = 0;
+
+  for (const photo of photos) {
+    const photoSize = estimatePhotoPayloadSize(photo);
+    if (batch.length && batchSize + photoSize > MAX_UPLOAD_BATCH_CHARS) {
+      batches.push(batch);
+      batch = [];
+      batchSize = 0;
+    }
+    batch.push(photo);
+    batchSize += photoSize;
+  }
+
+  if (batch.length) batches.push(batch);
+  return batches;
+}
+
 export default function UploadForm({ people }: { people: Person[] }) {
   const [personId, setPersonId] = useState(people[0]?.id || "");
   const [photos, setPhotos] = useState<PreparedPhoto[]>([]);
@@ -57,10 +83,22 @@ export default function UploadForm({ people }: { people: Person[] }) {
     setError("");
     startTransition(async () => {
       try {
-        const saved = await uploadPhotos(personId, photos);
-        setResult(`${saved.photoCount} photo${saved.photoCount === 1 ? "" : "s"} and ${saved.faceCount} face${saved.faceCount === 1 ? "" : "s"} indexed.`);
+        const batches = chunkPhotosForUpload(photos);
+        let photoCount = 0;
+        let faceCount = 0;
+
+        for (const [index, batch] of batches.entries()) {
+          setStatus(`Saving batch ${index + 1} of ${batches.length}...`);
+          const saved = await uploadPhotos(personId, batch);
+          photoCount += saved.photoCount;
+          faceCount += saved.faceCount;
+        }
+
+        setStatus("");
+        setResult(`${photoCount} photo${photoCount === 1 ? "" : "s"} and ${faceCount} face${faceCount === 1 ? "" : "s"} indexed.`);
         setPhotos([]);
       } catch (err) {
+        setStatus("");
         setError(err instanceof Error ? err.message : "Upload failed. Try fewer photos at once.");
       }
     });
