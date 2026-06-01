@@ -1,0 +1,11 @@
+node_modules
+.next
+out
+data/*.db
+data/*.db-*
+public/uploads/*.jpg
+public/uploads/*.jpeg
+public/uploads/*.png
+public/uploads/*.webp
+dev-server*.log
+.env*
