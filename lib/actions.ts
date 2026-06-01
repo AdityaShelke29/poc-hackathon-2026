@@ -29,6 +29,12 @@ type PhotoRow = {
   uploader_name: string | null;
 };
 
+type MatchedPhotoRow = PhotoRow & {
+  best_distance: number;
+  match_strength: number;
+  match_label: string;
+};
+
 type DetectionRow = {
   photo_id: string;
   embedding: Buffer;
@@ -131,22 +137,50 @@ export async function getPerson(personId: string) {
     .get(personId) as Omit<PersonRow, "embedding"> | undefined;
 }
 
-export async function getMyPhotos(personId: string) {
+function clampMatchThreshold(threshold: number) {
+  if (!Number.isFinite(threshold)) return 0.6;
+  return Math.min(0.9, Math.max(0.45, threshold));
+}
+
+function matchStrengthFromDistance(distance: number) {
+  const strength = Math.round((1 - (distance - 0.45) / (0.9 - 0.45)) * 100);
+  return Math.min(99, Math.max(1, strength));
+}
+
+function matchLabelFromStrength(strength: number) {
+  if (strength >= 75) return "Strong match";
+  if (strength >= 50) return "Good match";
+  if (strength >= 30) return "Possible match";
+  return "Loose match";
+}
+
+export async function getMyPhotos(personId: string, threshold = 0.6) {
+  const matchThreshold = clampMatchThreshold(threshold);
   const person = db.prepare("SELECT * FROM people WHERE id = ?").get(personId) as PersonRow | undefined;
-  if (!person) return { person: null, photos: [] };
+  const stats = {
+    photoCount: (db.prepare("SELECT COUNT(*) AS count FROM photos").get() as { count: number }).count,
+    faceCount: (db.prepare("SELECT COUNT(*) AS count FROM face_detections").get() as { count: number }).count,
+  };
+  if (!person) return { person: null, photos: [], stats, threshold: matchThreshold };
 
   const target = bufferToEmbedding(person.embedding);
   const detections = db.prepare("SELECT photo_id, embedding FROM face_detections").all() as DetectionRow[];
-  const matchedPhotoIds = new Set<string>();
+  const matchedDistances = new Map<string, number>();
 
   detections.forEach((detection) => {
     const distance = euclideanDistance(target, bufferToEmbedding(detection.embedding));
-    if (distance < 0.6) matchedPhotoIds.add(detection.photo_id);
+    if (distance < matchThreshold) {
+      const currentDistance = matchedDistances.get(detection.photo_id);
+      if (currentDistance === undefined || distance < currentDistance) {
+        matchedDistances.set(detection.photo_id, distance);
+      }
+    }
   });
 
-  if (!matchedPhotoIds.size) return { person, photos: [] };
+  if (!matchedDistances.size) return { person, photos: [], stats, threshold: matchThreshold };
 
-  const placeholders = [...matchedPhotoIds].map(() => "?").join(",");
+  const matchedPhotoIds = [...matchedDistances.keys()];
+  const placeholders = matchedPhotoIds.map(() => "?").join(",");
   const photos = db
     .prepare(
       `SELECT photos.id, photos.file_path, photos.uploaded_by_person_id, photos.uploaded_at, people.name AS uploader_name
@@ -157,5 +191,19 @@ export async function getMyPhotos(personId: string) {
     )
     .all(...matchedPhotoIds) as PhotoRow[];
 
-  return { person, photos };
+  return {
+    person,
+    photos: photos.map((photo) => {
+      const bestDistance = matchedDistances.get(photo.id) ?? 1;
+      const matchStrength = matchStrengthFromDistance(bestDistance);
+      return {
+        ...photo,
+        best_distance: bestDistance,
+        match_strength: matchStrength,
+        match_label: matchLabelFromStrength(matchStrength),
+      };
+    }) satisfies MatchedPhotoRow[],
+    stats,
+    threshold: matchThreshold,
+  };
 }

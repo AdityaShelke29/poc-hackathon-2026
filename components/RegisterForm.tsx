@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { fileToDataUrl, getFaceApi, loadFaceModels, loadImage } from "@/lib/face";
+import { fileToJpegDataUrl, getFaceApi, loadFaceModels, loadImage } from "@/lib/face";
 import { registerPerson } from "@/lib/actions";
 
 export default function RegisterForm() {
@@ -17,7 +17,7 @@ export default function RegisterForm() {
     setError("");
     setEmbedding(null);
     setStatus("Detecting faces...");
-    const base64 = await fileToDataUrl(file);
+    const base64 = await fileToJpegDataUrl(file, 1200, 0.9);
     setPreview(base64);
 
     await loadFaceModels();

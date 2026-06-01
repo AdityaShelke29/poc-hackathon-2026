@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { fileToDataUrl, getFaceApi, loadFaceModels, loadImage } from "@/lib/face";
+import { fileToJpegDataUrl, getFaceApi, loadFaceModels, loadImage } from "@/lib/face";
 import { uploadPhotos } from "@/lib/actions";
 
 type Person = { id: string; name: string; profile_photo_path: string };
@@ -12,43 +12,56 @@ export default function UploadForm({ people }: { people: Person[] }) {
   const [photos, setPhotos] = useState<PreparedPhoto[]>([]);
   const [status, setStatus] = useState("");
   const [result, setResult] = useState("");
+  const [error, setError] = useState("");
   const [isPending, startTransition] = useTransition();
 
   async function onFiles(files: FileList | null) {
     if (!files?.length) return;
+    setError("");
     setResult("");
     setPhotos([]);
-    setStatus("Detecting faces...");
-    await loadFaceModels();
-    const faceapi = await getFaceApi();
+    try {
+      setStatus("Detecting faces...");
+      await loadFaceModels();
+      const faceapi = await getFaceApi();
 
-    const prepared: PreparedPhoto[] = [];
-    for (const file of Array.from(files)) {
-      const base64 = await fileToDataUrl(file);
-      const img = await loadImage(base64);
-      const detections = await faceapi
-        .detectAllFaces(img, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.25 }))
-        .withFaceLandmarks()
-        .withFaceDescriptors();
+      const prepared: PreparedPhoto[] = [];
+      for (const [index, file] of Array.from(files).entries()) {
+        setStatus(`Detecting faces... ${index + 1} of ${files.length}`);
+        const base64 = await fileToJpegDataUrl(file);
+        const img = await loadImage(base64);
+        const detections = await faceapi
+          .detectAllFaces(img, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.25 }))
+          .withFaceLandmarks()
+          .withFaceDescriptors();
 
-      prepared.push({
-        id: crypto.randomUUID(),
-        base64,
-        embeddings: detections.map((detection) => Array.from(detection.descriptor)),
-        boxes: detections.map((detection) => JSON.stringify(detection.detection.box)),
-        faceCount: detections.length,
-      });
-      setPhotos([...prepared]);
+        prepared.push({
+          id: crypto.randomUUID(),
+          base64,
+          embeddings: detections.map((detection) => Array.from(detection.descriptor)),
+          boxes: detections.map((detection) => JSON.stringify(detection.detection.box)),
+          faceCount: detections.length,
+        });
+        setPhotos([...prepared]);
+      }
+
+      setStatus(`Ready: ${prepared.length} photo${prepared.length === 1 ? "" : "s"} processed.`);
+    } catch (err) {
+      setStatus("");
+      setError(err instanceof Error ? err.message : "Could not process those photos.");
     }
-
-    setStatus(`Ready: ${prepared.length} photo${prepared.length === 1 ? "" : "s"} processed.`);
   }
 
   function onSubmit() {
+    setError("");
     startTransition(async () => {
-      const saved = await uploadPhotos(personId, photos);
-      setResult(`${saved.photoCount} photo${saved.photoCount === 1 ? "" : "s"} and ${saved.faceCount} face${saved.faceCount === 1 ? "" : "s"} indexed.`);
-      setPhotos([]);
+      try {
+        const saved = await uploadPhotos(personId, photos);
+        setResult(`${saved.photoCount} photo${saved.photoCount === 1 ? "" : "s"} and ${saved.faceCount} face${saved.faceCount === 1 ? "" : "s"} indexed.`);
+        setPhotos([]);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Upload failed. Try fewer photos at once.");
+      }
     });
   }
 
@@ -86,6 +99,7 @@ export default function UploadForm({ people }: { people: Person[] }) {
 
         {status ? <p className="mt-4 font-semibold text-emerald-700">{status}</p> : null}
         {result ? <p className="mt-4 font-black text-emerald-800">{result}</p> : null}
+        {error ? <p className="mt-4 font-semibold text-red-700">{error}</p> : null}
 
         <button
           onClick={onSubmit}
