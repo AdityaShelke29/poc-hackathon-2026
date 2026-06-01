@@ -68,6 +68,12 @@ async function saveImage(id: string, base64: string) {
   return filePath;
 }
 
+async function deleteUploadedFile(filePath: string) {
+  if (!filePath.startsWith("/uploads/profile-")) return;
+  const fileName = path.basename(filePath);
+  await fs.rm(path.join(uploadDir, fileName), { force: true });
+}
+
 export async function registerPerson(name: string, base64: string, embedding: number[]) {
   if (!name.trim()) throw new Error("Name is required.");
   if (embedding.length !== 128) throw new Error("Expected a 128-value face embedding.");
@@ -112,6 +118,25 @@ export async function uploadPhotos(personId: string, photos: UploadPhotoInput[])
   }
 
   return { photoCount: photos.length, faceCount };
+}
+
+export async function deletePersonProfile(personId: string) {
+  if (!personId) throw new Error("Profile is required.");
+
+  const person = db.prepare("SELECT profile_photo_path FROM people WHERE id = ?").get(personId) as
+    | Pick<PersonRow, "profile_photo_path">
+    | undefined;
+
+  if (!person) redirect("/");
+
+  const deleteProfile = db.transaction(() => {
+    db.prepare("UPDATE photos SET uploaded_by_person_id = NULL WHERE uploaded_by_person_id = ?").run(personId);
+    db.prepare("DELETE FROM people WHERE id = ?").run(personId);
+  });
+
+  deleteProfile();
+  await deleteUploadedFile(person.profile_photo_path);
+  redirect("/");
 }
 
 export async function getAllPeople() {

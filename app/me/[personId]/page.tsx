@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Arrow, EmptyState, PhotoTile, Stepper } from "@/components/EditorialUI";
+import DeleteProfileButton from "@/components/DeleteProfileButton";
 import MatchThresholdControl from "@/components/MatchThresholdControl";
 import RefreshMatchesButton from "@/components/RefreshMatchesButton";
 import { getMyPhotos } from "@/lib/actions";
@@ -16,6 +17,7 @@ export default async function MyPhotosPage({
   const { personId } = await params;
   const { threshold: thresholdParam } = await searchParams;
   const { person, photos, stats, threshold } = await getMyPhotos(personId, Number(thresholdParam));
+  const downloadHref = `/api/download/person/${personId}?threshold=${threshold}`;
 
   if (!person) {
     return (
@@ -50,10 +52,16 @@ export default async function MyPhotosPage({
         </div>
         <div className="flex flex-col gap-3 sm:flex-row">
           <RefreshMatchesButton />
+          {photos.length ? (
+            <a href={downloadHref} className="btn btn-ghost">
+              Download matches
+            </a>
+          ) : null}
           <Link href="/upload" className="btn btn-accent">
             Upload more
             <Arrow light />
           </Link>
+          <DeleteProfileButton personId={personId} personName={person.name} />
         </div>
       </section>
 
@@ -77,6 +85,7 @@ export default async function MyPhotosPage({
               matchLabel={photo.match_label}
               matchStrength={photo.match_strength}
               imageClassName="aspect-square"
+              downloadHref={photo.file_path}
             />
           ))}
           </div>

@@ -15,6 +15,7 @@ type PhotoTileProps = {
   imageClassName?: string;
   matchLabel?: string;
   matchStrength?: number;
+  downloadHref?: string;
   scan?: boolean;
 };
 
@@ -133,6 +134,7 @@ export function PhotoTile({
   imageClassName = "aspect-square",
   matchLabel,
   matchStrength,
+  downloadHref,
   scan = false,
 }: PhotoTileProps) {
   return (
@@ -149,6 +151,11 @@ export function PhotoTile({
               <span className="mono text-white/80">{matchLabel}</span>
               {matchStrength !== undefined ? <span className="rounded bg-white px-2 py-1 text-xs font-black text-black">{matchStrength}%</span> : null}
             </div>
+          ) : null}
+          {downloadHref ? (
+            <a href={downloadHref} download className="mono mt-3 inline-flex text-white underline decoration-white/50 underline-offset-4">
+              Download
+            </a>
           ) : null}
         </div>
       ) : null}
