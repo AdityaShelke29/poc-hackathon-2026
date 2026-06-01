@@ -127,7 +127,7 @@ export async function deletePersonProfile(personId: string) {
     | Pick<PersonRow, "profile_photo_path">
     | undefined;
 
-  if (!person) redirect("/");
+  if (!person) return { deleted: false };
 
   const deleteProfile = db.transaction(() => {
     db.prepare("UPDATE photos SET uploaded_by_person_id = NULL WHERE uploaded_by_person_id = ?").run(personId);
@@ -136,7 +136,7 @@ export async function deletePersonProfile(personId: string) {
 
   deleteProfile();
   await deleteUploadedFile(person.profile_photo_path);
-  redirect("/");
+  return { deleted: true };
 }
 
 export async function getAllPeople() {

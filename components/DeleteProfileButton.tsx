@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { deletePersonProfile } from "@/lib/actions";
 
 export default function DeleteProfileButton({ personId, personName }: { personId: string; personName: string }) {
+  const router = useRouter();
   const [error, setError] = useState("");
   const [isPending, startTransition] = useTransition();
 
@@ -17,6 +19,8 @@ export default function DeleteProfileButton({ personId, personName }: { personId
     startTransition(async () => {
       try {
         await deletePersonProfile(personId);
+        router.push("/");
+        router.refresh();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Could not delete this profile.");
       }
