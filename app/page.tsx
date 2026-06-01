@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Arrow, EmptyState, PhotoTile } from "@/components/EditorialUI";
 import { getAllPeople, getAllPhotos } from "@/lib/actions";
 
 export const dynamic = "force-dynamic";
@@ -7,71 +8,149 @@ export default async function Home() {
   const [photos, people] = await Promise.all([getAllPhotos(), getAllPeople()]);
 
   return (
-    <main>
-      <section className="mx-auto grid max-w-6xl gap-8 px-5 py-12 md:grid-cols-[1.1fr_0.9fr] md:items-center">
-        <div>
-          <h1 className="max-w-3xl text-5xl font-black leading-tight">Find every event photo you appear in.</h1>
-          <p className="mt-4 max-w-2xl text-lg text-stone-700">
-            Everyone uploads their own pictures to one local album. Register once with a selfie, then PhotoDrop matches your face across the event.
-          </p>
-        </div>
-        <div className="grid gap-3">
-          <Link href="/register" className="rounded-md bg-emerald-700 px-6 py-4 text-center text-lg font-black text-white">
-            I'm new - create my profile
-          </Link>
-          <Link href="#profiles" className="rounded-md border border-stone-300 bg-white px-6 py-4 text-center text-lg font-black">
-            I have a profile - find my photos
-          </Link>
+    <main className="page">
+      <section className="wrap py-14 md:py-20">
+        <div className="grid gap-12 md:grid-cols-[1.05fr_0.95fr] md:items-center lg:gap-16">
+          <div className="rise">
+            <div className="mono mb-7" style={{ color: "var(--ink-3)" }}>
+              Local shared roll / {photos.length} uploads / {people.length} profiles
+            </div>
+            <h1 className="headline">
+              Find every photo
+              <br />
+              you are actually <em style={{ color: "var(--accent)", fontStyle: "italic" }}>in</em>.
+            </h1>
+            <p className="body-copy mt-7 max-w-xl">
+              Everyone uploads their own shots to one shared album. Register once with a selfie and PhotoDrop surfaces every frame your face appears in.
+            </p>
+
+            <div className="mt-9 grid max-w-md gap-3">
+              <Link href="/register" className="btn btn-accent btn-lg btn-block">
+                I'm new, create my profile
+                <Arrow light />
+              </Link>
+              <Link href="#profiles" className="btn btn-ghost btn-lg btn-block">
+                I have a profile, find my photos
+              </Link>
+            </div>
+          </div>
+
+          <div className="rise" style={{ animationDelay: "0.12s" }}>
+            {photos[0] ? (
+              <div className="card p-3">
+                <PhotoTile
+                  src={photos[0].file_path}
+                  uploader={photos[0].uploader_name || "someone"}
+                  meta="faces indexed locally"
+                  imageClassName="aspect-[1.08]"
+                  scan
+                />
+                <div className="flex items-center justify-between gap-3 px-2 pb-1 pt-4">
+                  <span className="pill pill-accent">
+                    <span className="dot-live animate-pulse" />
+                    Detecting faces
+                  </span>
+                  <span className="mono" style={{ color: "var(--ink-3)" }}>
+                    live roll
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="card p-8 text-center">
+                <div className="mono mb-4" style={{ color: "var(--accent)" }}>
+                  Empty roll
+                </div>
+                <h2 className="section-title">Your album is waiting.</h2>
+                <p className="body-copy mx-auto mt-4 max-w-sm">
+                  Add the first event photos and every face will be indexed from the browser.
+                </p>
+                <Link href="/upload" className="btn btn-accent btn-lg mt-8">
+                  Add photos
+                  <Arrow light />
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
       </section>
 
-      <section id="profiles" className="border-t border-stone-200 bg-white px-5 py-8">
-        <div className="mx-auto max-w-6xl">
-          <h2 className="text-2xl font-black">Find your profile</h2>
-          {people.length ? (
-            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {people.map((person) => (
-                <Link
-                  key={person.id}
-                  href={`/me/${person.id}`}
-                  className="flex items-center gap-3 rounded-lg border border-stone-200 bg-stone-50 p-3 hover:border-emerald-700"
-                >
-                  <img src={person.profile_photo_path} alt="" className="h-14 w-14 rounded-md object-cover" />
-                  <span className="font-black">{person.name}</span>
+      <hr className="rule" />
+
+      <section id="profiles" className="wrap py-10">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <div className="mono mb-3" style={{ color: "var(--ink-3)" }}>
+              Find yourself
+            </div>
+            <h2 className="section-title">Who are you?</h2>
+          </div>
+          <Link href="/register" className="topbar-link">
+            Add profile
+          </Link>
+        </div>
+
+        {people.length ? (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {people.map((person) => (
+              <Link key={person.id} href={`/me/${person.id}`} className="card flex items-center gap-4 p-3 transition hover:-translate-y-0.5 hover:shadow-[var(--shadow-2)]">
+                <img src={person.profile_photo_path} alt="" className="avatar h-14 w-14" />
+                <div className="min-w-0">
+                  <p className="truncate text-lg font-black">{person.name}</p>
+                  <p className="mono mt-1" style={{ color: "var(--ink-3)" }}>
+                    Open matches
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            kicker="No profiles yet"
+            title="Register before finding photos."
+            body="Create a profile with one selfie, then PhotoDrop can search the shared roll for your face."
+            action="Register with a selfie"
+            href="/register"
+          />
+        )}
+      </section>
+
+      <hr className="rule" />
+
+      <section className="py-10 md:py-14">
+        <div className="wrap mb-6 flex flex-wrap items-baseline justify-between gap-4">
+          <h2 className="section-title">The shared roll</h2>
+          <span className="mono" style={{ color: "var(--ink-3)" }}>
+            {photos.length} uploads
+          </span>
+        </div>
+
+        {photos.length ? (
+          <div className="marquee">
+            <div className="marquee-track">
+              {[...photos, ...photos].map((photo, index) => (
+                <Link key={`${photo.id}-${index}`} href="/upload" className="block w-[220px] shrink-0">
+                  <PhotoTile src={photo.file_path} uploader={photo.uploader_name || "someone"} imageClassName="aspect-square" />
                 </Link>
               ))}
             </div>
-          ) : (
-            <p className="mt-3 text-stone-700">No profiles yet.</p>
-          )}
-        </div>
-      </section>
-
-      <section className="border-t border-stone-200 bg-white px-5 py-10">
-        <div className="mx-auto max-w-6xl">
-          <div className="flex items-end justify-between gap-4">
-            <h2 className="text-2xl font-black">Shared album</h2>
-            <Link href="/upload" className="text-sm font-bold text-emerald-800">
-              Add photos
-            </Link>
           </div>
+        ) : (
+          <div className="wrap">
+            <div className="card border-dashed p-10 text-center">
+              <p className="font-bold" style={{ color: "var(--ink-2)" }}>
+                No event photos uploaded yet.
+              </p>
+            </div>
+          </div>
+        )}
 
-          {photos.length ? (
-            <div className="photo-grid mt-6 grid gap-4">
-              {photos.map((photo) => (
-                <article key={photo.id} className="overflow-hidden rounded-lg border border-stone-200 bg-stone-50">
-                  <img src={photo.file_path} alt="" className="aspect-square w-full object-cover" />
-                  <p className="truncate p-3 text-sm font-semibold text-stone-700">
-                    Uploaded by {photo.uploader_name || "someone"}
-                  </p>
-                </article>
-              ))}
-            </div>
-          ) : (
-            <div className="mt-6 rounded-lg border border-dashed border-stone-300 bg-stone-50 p-10 text-center">
-              <p className="font-bold text-stone-700">No event photos uploaded yet.</p>
-            </div>
-          )}
+        <div className="wrap mt-6 flex flex-wrap items-center justify-between gap-4">
+          <span className="mono" style={{ color: "var(--ink-3)" }}>
+            Hover to pause. Uploads stay on this machine.
+          </span>
+          <Link href="/upload" className="btn btn-ghost">
+            Add photos
+          </Link>
         </div>
       </section>
     </main>

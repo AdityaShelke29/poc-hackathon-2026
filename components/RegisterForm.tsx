@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Arrow, CheckIcon, PhotoTile, StatusPill, Stepper } from "@/components/EditorialUI";
 import { fileToJpegDataUrl, getFaceApi, loadFaceModels, loadImage } from "@/lib/face";
 import { registerPerson } from "@/lib/actions";
 
@@ -56,48 +57,69 @@ export default function RegisterForm() {
   }
 
   return (
-    <div className="mx-auto grid max-w-5xl gap-8 px-5 py-10 md:grid-cols-[1fr_1.1fr]">
-      <section>
-        <h1 className="text-4xl font-black">Create your profile</h1>
-        <p className="mt-3 text-stone-700">Register once with a selfie so PhotoDrop can find you across the shared album.</p>
-      </section>
+    <main className="page wrap py-12 md:py-16">
+      <Stepper current={1} />
 
-      <form action={onSubmit} className="rounded-lg border border-stone-200 bg-white p-5 shadow-sm">
-        <label className="block text-sm font-bold" htmlFor="name">
-          Your name
-        </label>
-        <input
-          id="name"
-          required
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          className="mt-2 w-full rounded-md border border-stone-300 px-3 py-3"
-          placeholder="Ada Lovelace"
-        />
+      <div className="mt-10 grid gap-10 md:grid-cols-[0.92fr_1.08fr] md:items-start lg:gap-14">
+        <section className="rise">
+          <div className="mono mb-4" style={{ color: "var(--ink-3)" }}>
+            Profile setup
+          </div>
+          <h1 className="section-title">Create your profile</h1>
+          <p className="body-copy mt-4 max-w-md">
+            One selfie teaches PhotoDrop your face. The browser creates a face signature locally, then the app uses it to find you in the shared roll.
+          </p>
+        </section>
 
-        <label className="mt-5 block text-sm font-bold" htmlFor="selfie">
-          Selfie
-        </label>
-        <input
-          id="selfie"
-          type="file"
-          accept="image/*"
-          required
-          onChange={(event) => onFile(event.target.files?.[0])}
-          className="mt-2 w-full rounded-md border border-stone-300 bg-stone-50 px-3 py-3"
-        />
+        <form action={onSubmit} className="card rise p-5 md:p-6" style={{ animationDelay: "0.1s" }}>
+          <div className="grid gap-5">
+            <div className="field">
+              <label htmlFor="name">Your name</label>
+              <input
+                id="name"
+                required
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                className="input"
+                placeholder="Ada Lovelace"
+              />
+            </div>
 
-        {preview ? <img src={preview} alt="Selfie preview" className="mt-5 aspect-square w-full rounded-md object-cover" /> : null}
-        {status ? <p className="mt-4 font-semibold text-emerald-700">{status}</p> : null}
-        {error ? <p className="mt-4 font-semibold text-red-700">{error}</p> : null}
+            <div className="field">
+              <label htmlFor="selfie">Selfie</label>
+              <input
+                id="selfie"
+                type="file"
+                accept="image/*"
+                required
+                onChange={(event) => onFile(event.target.files?.[0])}
+                className="file-input"
+              />
+            </div>
 
-        <button
-          disabled={isPending || !embedding}
-          className="mt-6 w-full rounded-md bg-emerald-700 px-5 py-3 font-black text-white disabled:cursor-not-allowed disabled:bg-stone-400"
-        >
-          {isPending ? "Saving..." : "Create profile"}
-        </button>
-      </form>
-    </div>
+            {preview ? (
+              <div className="card p-2">
+                <PhotoTile src={preview} label="Selfie preview" imageClassName="aspect-square" scan={status === "Detecting faces..."} />
+              </div>
+            ) : null}
+
+            <div className="min-h-8">
+              {status ? (
+                <StatusPill tone="accent" pulse={status.includes("Detecting") || isPending}>
+                  {status.includes("Face detected") ? <CheckIcon /> : null}
+                  {status}
+                </StatusPill>
+              ) : null}
+              {error ? <StatusPill tone="danger">{error}</StatusPill> : null}
+            </div>
+
+            <button disabled={isPending || !embedding} className="btn btn-accent btn-lg">
+              {isPending ? "Creating profile..." : "Create profile"}
+              {!isPending ? <Arrow light /> : null}
+            </button>
+          </div>
+        </form>
+      </div>
+    </main>
   );
 }

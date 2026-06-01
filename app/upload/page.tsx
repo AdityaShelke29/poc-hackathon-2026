@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { EmptyState } from "@/components/EditorialUI";
 import UploadForm from "@/components/UploadForm";
 import { getAllPeople } from "@/lib/actions";
 
@@ -9,12 +9,14 @@ export default async function UploadPage() {
 
   if (!people.length) {
     return (
-      <main className="mx-auto max-w-3xl px-5 py-12">
-        <h1 className="text-4xl font-black">Create a profile first</h1>
-        <p className="mt-3 text-stone-700">Photo uploads are attached to a registered person.</p>
-        <Link href="/register" className="mt-6 inline-block rounded-md bg-emerald-700 px-5 py-3 font-black text-white">
-          Register
-        </Link>
+      <main className="page wrap py-12">
+        <EmptyState
+          kicker="No profiles yet"
+          title="Register before you upload."
+          body="Photo uploads are credited to a profile. Create yours with a selfie first, then add photos to the shared roll."
+          action="Register with a selfie"
+          href="/register"
+        />
       </main>
     );
   }

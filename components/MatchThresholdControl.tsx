@@ -46,15 +46,15 @@ export default function MatchThresholdControl({ threshold }: { threshold: number
   }
 
   return (
-    <section className="mt-8 rounded-lg border border-stone-200 bg-white p-5">
+    <section className="card mt-8 p-5 md:p-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div className="min-w-0 flex-1">
-          <label className="block text-sm font-black" htmlFor="match-threshold">
+          <label className="field-label block" htmlFor="match-threshold">
             Match style
           </label>
           <div className="mt-2 flex items-center gap-3">
-            <span className="rounded-md bg-emerald-50 px-3 py-1 text-sm font-black text-emerald-800">{currentMode}</span>
-            <span className="text-sm font-semibold text-stone-700">
+            <span className="pill pill-accent">{currentMode}</span>
+            <span className="text-sm font-bold" style={{ color: "var(--ink-2)" }}>
               {inclusiveness}% more inclusive
             </span>
           </div>
@@ -71,14 +71,14 @@ export default function MatchThresholdControl({ threshold }: { threshold: number
               onKeyUp={(event) => {
                 if (event.key === "Enter") applyThreshold();
               }}
-              className="w-full accent-emerald-700"
+              className="w-full accent-[var(--accent)]"
             />
-            <div className="mt-2 flex justify-between text-xs font-black uppercase text-stone-500">
+            <div className="mono mt-2 flex justify-between" style={{ color: "var(--ink-3)" }}>
               <span>More precise</span>
               <span>Less precise</span>
             </div>
           </div>
-          <p className="mt-3 text-sm font-semibold text-stone-700">
+          <p className="mt-3 text-sm font-semibold" style={{ color: "var(--ink-2)" }}>
             Move right to include photos where the face is smaller, turned, blurry, or partly blocked.
           </p>
         </div>
@@ -87,7 +87,7 @@ export default function MatchThresholdControl({ threshold }: { threshold: number
             type="button"
             onClick={() => applyThreshold()}
             disabled={isPending}
-            className="rounded-md bg-emerald-700 px-4 py-2 font-black text-white disabled:cursor-wait disabled:bg-stone-400"
+            className="btn btn-accent"
           >
             {isPending ? "Applying..." : "Apply"}
           </button>
@@ -95,7 +95,7 @@ export default function MatchThresholdControl({ threshold }: { threshold: number
             type="button"
             onClick={resetThreshold}
             disabled={isPending}
-            className="rounded-md border border-stone-300 bg-white px-4 py-2 font-black disabled:cursor-wait disabled:text-stone-500"
+            className="btn btn-ghost"
           >
             Default
           </button>

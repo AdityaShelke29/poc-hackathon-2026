@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Arrow, EmptyState, PhotoTile, StatusPill, Stepper } from "@/components/EditorialUI";
 import { fileToJpegDataUrl, getFaceApi, loadFaceModels, loadImage } from "@/lib/face";
 import { uploadPhotos } from "@/lib/actions";
 
@@ -66,58 +67,68 @@ export default function UploadForm({ people }: { people: Person[] }) {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-10">
-      <h1 className="text-4xl font-black">Upload event photos</h1>
-      <div className="mt-8 rounded-lg border border-stone-200 bg-white p-5 shadow-sm">
-        <label className="block text-sm font-bold" htmlFor="person">
-          Uploaded by
-        </label>
-        <select
-          id="person"
-          value={personId}
-          onChange={(event) => setPersonId(event.target.value)}
-          className="mt-2 w-full rounded-md border border-stone-300 px-3 py-3"
-        >
-          {people.map((person) => (
-            <option key={person.id} value={person.id}>
-              {person.name}
-            </option>
-          ))}
-        </select>
+    <main className="page wrap py-12 md:py-16">
+      <Stepper current={2} />
 
-        <label className="mt-5 block text-sm font-bold" htmlFor="photos">
-          Photos
-        </label>
-        <input
-          id="photos"
-          type="file"
-          accept="image/*"
-          multiple
-          onChange={(event) => onFiles(event.target.files)}
-          className="mt-2 w-full rounded-md border border-stone-300 bg-stone-50 px-3 py-3"
-        />
+      <section className="rise mt-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+        <div>
+          <div className="mono mb-4" style={{ color: "var(--ink-3)" }}>
+            Add to the roll
+          </div>
+          <h1 className="section-title">Upload event photos</h1>
+          <p className="body-copy mt-3 max-w-2xl">
+            PhotoDrop scans every face in each photo locally, then indexes the face signatures so everyone can find themselves.
+          </p>
+        </div>
+        <div className="field w-full md:w-72">
+          <label htmlFor="person">Uploading as</label>
+          <select id="person" value={personId} onChange={(event) => setPersonId(event.target.value)} className="input">
+            {people.map((person) => (
+              <option key={person.id} value={person.id}>
+                {person.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </section>
 
-        {status ? <p className="mt-4 font-semibold text-emerald-700">{status}</p> : null}
-        {result ? <p className="mt-4 font-black text-emerald-800">{result}</p> : null}
-        {error ? <p className="mt-4 font-semibold text-red-700">{error}</p> : null}
+      <div className="card rise mt-8 p-5 md:p-6" style={{ animationDelay: "0.08s" }}>
+        <div className="field">
+          <label htmlFor="photos">Photos</label>
+          <input id="photos" type="file" accept="image/*" multiple onChange={(event) => onFiles(event.target.files)} className="file-input" />
+        </div>
 
-        <button
-          onClick={onSubmit}
-          disabled={isPending || !personId || photos.length === 0}
-          className="mt-6 rounded-md bg-emerald-700 px-5 py-3 font-black text-white disabled:cursor-not-allowed disabled:bg-stone-400"
-        >
+        <div className="mt-5 min-h-8">
+          {status ? <StatusPill tone="accent" pulse={status.includes("Detecting")}>{status}</StatusPill> : null}
+          {result ? <StatusPill tone="accent">{result}</StatusPill> : null}
+          {error ? <StatusPill tone="danger">{error}</StatusPill> : null}
+        </div>
+
+        <button onClick={onSubmit} disabled={isPending || !personId || photos.length === 0} className="btn btn-accent btn-lg mt-5">
           {isPending ? "Saving..." : "Save and index photos"}
+          {!isPending ? <Arrow light /> : null}
         </button>
       </div>
 
-      <div className="photo-grid mt-8 grid gap-4">
-        {photos.map((photo) => (
-          <article key={photo.id} className="overflow-hidden rounded-lg border border-stone-200 bg-white">
-            <img src={photo.base64} alt="" className="aspect-square w-full object-cover" />
-            <p className="p-3 text-sm font-bold">{photo.faceCount} face{photo.faceCount === 1 ? "" : "s"} found</p>
-          </article>
-        ))}
-      </div>
-    </div>
+      {photos.length ? (
+        <div className="photo-grid mt-8">
+          {photos.map((photo) => (
+            <PhotoTile
+              key={photo.id}
+              src={photo.base64}
+              meta={`${photo.faceCount} face${photo.faceCount === 1 ? "" : "s"} found`}
+              imageClassName="aspect-square"
+              scan={status.includes("Detecting")}
+            />
+          ))}
+        </div>
+      ) : (
+        <EmptyState
+          kicker="Nothing staged"
+          title="Choose photos to start scanning."
+          body="Once selected, previews appear here with a face count before anything is saved."
+        />
+      )}
+    </main>
   );
 }

@@ -12,7 +12,7 @@ export default function RefreshMatchesButton() {
       type="button"
       onClick={() => startTransition(() => router.refresh())}
       disabled={isPending}
-      className="rounded-md border border-stone-300 bg-white px-5 py-3 text-center font-black text-stone-900 hover:border-emerald-700 disabled:cursor-wait disabled:text-stone-500"
+      className="btn btn-ghost"
     >
       {isPending ? "Refreshing..." : "Refresh matches"}
     </button>

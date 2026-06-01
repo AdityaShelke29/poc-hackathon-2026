@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Arrow, EmptyState, PhotoTile, Stepper } from "@/components/EditorialUI";
 import MatchThresholdControl from "@/components/MatchThresholdControl";
 import RefreshMatchesButton from "@/components/RefreshMatchesButton";
 import { getMyPhotos } from "@/lib/actions";
@@ -18,31 +19,40 @@ export default async function MyPhotosPage({
 
   if (!person) {
     return (
-      <main className="mx-auto max-w-3xl px-5 py-12">
-        <h1 className="text-4xl font-black">Profile not found</h1>
-        <Link href="/register" className="mt-6 inline-block rounded-md bg-emerald-700 px-5 py-3 font-black text-white">
-          Create profile
-        </Link>
+      <main className="page wrap py-12">
+        <EmptyState
+          kicker="Missing profile"
+          title="Profile not found."
+          body="Create a profile with a selfie before searching the shared roll."
+          action="Create profile"
+          href="/register"
+        />
       </main>
     );
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-5 py-10">
-      <section className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-4">
-          <img src={person.profile_photo_path} alt="" className="h-24 w-24 rounded-lg object-cover" />
+    <main className="page wrap py-12 md:py-16">
+      <Stepper current={3} />
+
+      <section className="rise mt-10 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-5">
+          <img src={person.profile_photo_path} alt="" className="avatar h-20 w-20 md:h-24 md:w-24" />
           <div>
-            <h1 className="text-4xl font-black">{person.name}</h1>
-            <p className="mt-1 text-stone-700">
+            <div className="mono mb-2" style={{ color: "var(--ink-3)" }}>
+              Your photos
+            </div>
+            <h1 className="section-title">{person.name}</h1>
+            <p className="body-copy mt-2 text-base">
               {photos.length} matching photo{photos.length === 1 ? "" : "s"} from {stats.photoCount} uploaded photo{stats.photoCount === 1 ? "" : "s"}
             </p>
           </div>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row">
           <RefreshMatchesButton />
-          <Link href="/upload" className="rounded-md bg-emerald-700 px-5 py-3 text-center font-black text-white">
+          <Link href="/upload" className="btn btn-accent">
             Upload more
+            <Arrow light />
           </Link>
         </div>
       </section>
@@ -50,28 +60,39 @@ export default async function MyPhotosPage({
       <MatchThresholdControl threshold={threshold} />
 
       {photos.length ? (
-        <div className="photo-grid mt-8 grid gap-4">
+        <>
+          <div className="rise mt-10 flex flex-wrap items-baseline gap-5">
+            <div className="bignum">{photos.length}</div>
+            <h2 className="section-title">photos of you, found.</h2>
+            <span className="mono ml-auto" style={{ color: "var(--ink-3)" }}>
+              matched on face signature
+            </span>
+          </div>
+          <div className="photo-grid mt-8">
           {photos.map((photo) => (
-            <article key={photo.id} className="overflow-hidden rounded-lg border border-stone-200 bg-white">
-              <img src={photo.file_path} alt="" className="aspect-square w-full object-cover" />
-              <div className="p-3 text-sm font-semibold text-stone-700">
-                <p className="truncate">Uploaded by {photo.uploader_name || "someone"}</p>
-                <div className="mt-2 flex items-center justify-between gap-2">
-                  <span className="text-xs font-black text-stone-500">{photo.match_label}</span>
-                  <span className="rounded bg-stone-100 px-2 py-1 text-xs font-black text-stone-700">{photo.match_strength}%</span>
-                </div>
-              </div>
-            </article>
+            <PhotoTile
+              key={photo.id}
+              src={photo.file_path}
+              uploader={photo.uploader_name || "someone"}
+              matchLabel={photo.match_label}
+              matchStrength={photo.match_strength}
+              imageClassName="aspect-square"
+            />
           ))}
-        </div>
+          </div>
+        </>
       ) : (
-        <div className="mt-8 rounded-lg border border-dashed border-stone-300 bg-white p-10 text-center">
-          <p className="font-bold text-stone-700">
-            {stats.photoCount === 0
-              ? "No event photos have been uploaded yet. Upload event photos first, then refresh matches."
-              : `No matches at this match style across ${stats.photoCount} uploaded photo${stats.photoCount === 1 ? "" : "s"} and ${stats.faceCount} indexed face${stats.faceCount === 1 ? "" : "s"}.`}
-          </p>
-        </div>
+        <EmptyState
+          kicker={stats.photoCount === 0 ? "Empty roll" : "No matches yet"}
+          title={stats.photoCount === 0 ? "No event photos have been uploaded yet." : "We did not find you at this match style."}
+          body={
+            stats.photoCount === 0
+              ? "Upload event photos first, then refresh matches."
+              : `${stats.photoCount} uploaded photo${stats.photoCount === 1 ? "" : "s"} and ${stats.faceCount} indexed face${stats.faceCount === 1 ? "" : "s"} were searched. Move the match style toward less precise to include more possible matches.`
+          }
+          action={stats.photoCount === 0 ? "Upload photos" : undefined}
+          href={stats.photoCount === 0 ? "/upload" : undefined}
+        />
       )}
     </main>
   );

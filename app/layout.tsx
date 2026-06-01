@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Wordmark } from "@/components/EditorialUI";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -11,22 +12,29 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en">
       <body>
-        <header className="border-b border-stone-200 bg-white/80">
-          <nav className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-            <Link href="/" className="text-xl font-black tracking-tight">
-              PhotoDrop
-            </Link>
-            <div className="flex gap-3 text-sm font-semibold">
-              <Link href="/register" className="rounded-md px-3 py-2 hover:bg-stone-100">
-                Register
-              </Link>
-              <Link href="/upload" className="rounded-md px-3 py-2 hover:bg-stone-100">
-                Upload
-              </Link>
-            </div>
-          </nav>
-        </header>
-        {children}
+        <div className="app-shell">
+          <header className="topbar">
+            <nav className="topbar-inner wrap">
+              <Wordmark />
+              <div className="topbar-nav">
+                <Link href="/" className="topbar-link">
+                  The roll
+                </Link>
+                <Link href="/register" className="topbar-link">
+                  Register
+                </Link>
+                <Link href="/upload" className="topbar-link">
+                  Upload
+                </Link>
+                <span className="pill">
+                  <span className="dot-live" />
+                  Local album
+                </span>
+              </div>
+            </nav>
+          </header>
+          {children}
+        </div>
       </body>
     </html>
   );
