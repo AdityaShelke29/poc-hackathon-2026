@@ -1,10 +1,9 @@
 "use server";
 
 import crypto from "node:crypto";
-import fs from "node:fs/promises";
-import path from "node:path";
 import { redirect } from "next/navigation";
 import db from "./db";
+import { deleteImage, saveImage } from "./storage";
 
 type UploadPhotoInput = {
   id?: string;
@@ -40,8 +39,6 @@ type DetectionRow = {
   embedding: Buffer;
 };
 
-const uploadDir = path.join(process.cwd(), "public", "uploads");
-
 function embeddingToBuffer(embedding: number[]) {
   return Buffer.from(new Float32Array(embedding).buffer);
 }
@@ -61,17 +58,9 @@ function decodeBase64Image(base64: string) {
   return Buffer.from(payload, "base64");
 }
 
-async function saveImage(id: string, base64: string) {
-  await fs.mkdir(uploadDir, { recursive: true });
-  const filePath = `/uploads/${id}.jpg`;
-  await fs.writeFile(path.join(uploadDir, `${id}.jpg`), decodeBase64Image(base64));
-  return filePath;
-}
-
 async function deleteUploadedFile(filePath: string) {
-  if (!filePath.startsWith("/uploads/profile-")) return;
-  const fileName = path.basename(filePath);
-  await fs.rm(path.join(uploadDir, fileName), { force: true });
+  if (!filePath.includes("profile-") && !filePath.includes("/profiles/")) return;
+  await deleteImage(filePath);
 }
 
 export async function registerPerson(name: string, base64: string, embedding: number[]) {
@@ -79,7 +68,7 @@ export async function registerPerson(name: string, base64: string, embedding: nu
   if (embedding.length !== 128) throw new Error("Expected a 128-value face embedding.");
 
   const personId = crypto.randomUUID();
-  const photoPath = await saveImage(`profile-${personId}`, base64);
+  const photoPath = await saveImage(`profile-${personId}`, decodeBase64Image(base64));
 
   db.prepare(
     "INSERT INTO people (id, name, profile_photo_path, embedding, created_at) VALUES (?, ?, ?, ?, ?)",
@@ -102,7 +91,7 @@ export async function uploadPhotos(personId: string, photos: UploadPhotoInput[])
   let faceCount = 0;
   for (const photo of photos) {
     const photoId = photo.id || crypto.randomUUID();
-    const filePath = await saveImage(photoId, photo.base64);
+    const filePath = await saveImage(photoId, decodeBase64Image(photo.base64));
     insertPhoto.run(photoId, filePath, personId, new Date().toISOString());
 
     photo.embeddings.forEach((embedding, index) => {

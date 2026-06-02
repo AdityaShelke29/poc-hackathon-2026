@@ -12,6 +12,7 @@ No auth. No cloud storage. No hosted database. The whole demo runs on your machi
 - Upload batches of event photos from any registered profile.
 - Detect faces in the browser with `@vladmandic/face-api`.
 - Store photos on disk under `public/uploads`.
+- Store new photos in DigitalOcean Spaces when Spaces env vars are configured.
 - Store people, photos, and face detections in local SQLite.
 - Find profile matches using face embeddings and an adjustable match style.
 - Download matched photos as a ZIP.
@@ -24,6 +25,7 @@ No auth. No cloud storage. No hosted database. The whole demo runs on your machi
 - Tailwind CSS
 - `better-sqlite3`
 - `@vladmandic/face-api`
+- DigitalOcean Spaces via the AWS S3 SDK
 - Local SQLite at `data/photodrop.db`
 
 ## Local Setup
@@ -62,14 +64,50 @@ npm run build
 
 ## Local Data
 
-PhotoDrop creates local data on first use:
+PhotoDrop creates local database data on first use:
 
 ```text
 data/photodrop.db
+```
+
+If DigitalOcean Spaces is not configured, images are saved locally as a development fallback:
+
+```text
 public/uploads/*.jpg
 ```
 
 These files are demo/runtime data and should not be committed.
+
+## DigitalOcean Spaces
+
+New images upload to DigitalOcean Spaces when all `DO_SPACES_*` variables are present in `.env.local`.
+
+Copy the template:
+
+```bash
+cp .env.example .env.local
+```
+
+Then fill in:
+
+```env
+DO_SPACES_KEY=...
+DO_SPACES_SECRET=...
+DO_SPACES_BUCKET=photodrop
+DO_SPACES_REGION=nyc3
+DO_SPACES_ENDPOINT=https://nyc3.digitaloceanspaces.com
+DO_SPACES_PUBLIC_BASE_URL=https://photodrop.nyc3.digitaloceanspaces.com
+```
+
+Current storage behavior:
+
+- Profile selfies upload to `profiles/profile-{personId}.jpg`.
+- Event photos upload to `photos/{photoId}.jpg`.
+- The SQLite `file_path` column stores the public Spaces URL.
+- Existing local `/uploads/*.jpg` photos keep working.
+- ZIP downloads can read from either Spaces URLs or local fallback files.
+
+For a polished production setup, use a private Space and signed URLs. This demo currently writes public-read objects so uploaded images can render directly in the browser.
 
 ## Face Matching
 
@@ -98,4 +136,3 @@ Cloudflare will print a temporary `trycloudflare.com` URL. Keep both `npm run de
 - There is no authentication, so anyone with access to the running app can view or modify local data.
 - Large uploads are split into batches to avoid Server Action request-size limits.
 - Browser extensions can cause hydration warnings in development; the layout suppresses harmless extension-added body attribute mismatches.
-

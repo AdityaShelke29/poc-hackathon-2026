@@ -9,3 +9,4 @@ public/uploads/*.png
 public/uploads/*.webp
 dev-server*.log
 .env*
+!.env.example

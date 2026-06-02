@@ -1,6 +1,5 @@
-import fs from "node:fs/promises";
-import path from "node:path";
 import { getMyPhotos } from "@/lib/actions";
+import { readImage } from "@/lib/storage";
 import { createZip } from "@/lib/zip";
 
 function safeFileName(value: string) {
@@ -29,8 +28,7 @@ export async function GET(
 
   const entries = await Promise.all(
     photos.map(async (photo, index) => {
-      const sourcePath = path.join(process.cwd(), "public", "uploads", path.basename(photo.file_path));
-      const data = await fs.readFile(sourcePath);
+      const data = await readImage(photo.file_path);
       return {
         name: `${String(index + 1).padStart(2, "0")}-${safeFileName(person.name) || "photodrop"}.jpg`,
         data,
