@@ -13,7 +13,7 @@ No auth. No cloud storage. No hosted database. The whole demo runs on your machi
 - Detect faces in the browser with `@vladmandic/face-api`.
 - Store photos on disk under `public/uploads`.
 - Store new photos in DigitalOcean Spaces when Spaces env vars are configured.
-- Store people, photos, and face detections in local SQLite.
+- Store people, photos, and face detections in Supabase when configured.
 - Find profile matches using face embeddings and an adjustable match style.
 - Download matched photos as a ZIP.
 - Delete profiles while keeping the shared event roll intact.
@@ -26,6 +26,7 @@ No auth. No cloud storage. No hosted database. The whole demo runs on your machi
 - `better-sqlite3`
 - `@vladmandic/face-api`
 - DigitalOcean Spaces via the AWS S3 SDK
+- Supabase Postgres
 - Local SQLite at `data/photodrop.db`
 
 ## Local Setup
@@ -77,6 +78,29 @@ public/uploads/*.jpg
 ```
 
 These files are demo/runtime data and should not be committed.
+
+## Supabase Database
+
+PhotoDrop uses Supabase when `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are present in `.env.local`.
+
+1. Create a Supabase project.
+2. Open the Supabase SQL editor.
+3. Run [supabase/schema.sql](</supabase/schema.sql>).
+4. Add the server-only env vars:
+
+```env
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=...
+```
+
+Current database behavior:
+
+- Supabase stores people, photos, and face detections.
+- DigitalOcean Spaces stores image files.
+- Face embeddings are stored as `jsonb` arrays for this first migration step.
+- If Supabase env vars are absent, the app falls back to local SQLite.
+
+For larger albums, the next upgrade should convert embeddings to `pgvector` and perform nearest-neighbor matching directly in Postgres.
 
 ## DigitalOcean Spaces
 
